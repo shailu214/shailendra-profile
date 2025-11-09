@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const helmet = require('helmet');
 const compression = require('compression');
 const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
 
 // Load environment variables
 dotenv.config();
@@ -48,9 +49,15 @@ app.use('/uploads', express.static('uploads'));
 // Connect to database
 connectDB();
 
-// Ensure admin user exists (for development)
+// Ensure admin user exists (optimized for serverless)
 const ensureAdminUser = async () => {
   try {
+    // Only create admin user in development or if explicitly requested
+    if (process.env.NODE_ENV === 'production' && !process.env.CREATE_ADMIN_USER) {
+      console.log('📦 Production mode: Skipping admin user creation');
+      return;
+    }
+
     const { User } = require('./models');
     const adminExists = await User.findOne({ email: 'admin@portfolio.com' });
     
@@ -68,12 +75,16 @@ const ensureAdminUser = async () => {
       console.log('✅ Admin user already exists');
     }
   } catch (error) {
-    console.error('❌ Error creating admin user:', error.message);
+    console.error('❌ Error with admin user:', error.message);
+    // Don't fail the entire server if admin creation fails
   }
 };
 
-// Create admin user after a short delay to ensure DB connection
-setTimeout(ensureAdminUser, 2000);
+// Create admin user after database connection, but don't block server startup
+mongoose.connection.once('open', () => {
+  // Run admin creation in background, don't block
+  setImmediate(ensureAdminUser);
+});
 
 // API Routes
 const apiRoutes = require('./routes');
