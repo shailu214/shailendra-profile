@@ -50,4 +50,4 @@ vercel-test.json
 
 # Seed files (not needed in production)
 seed.js
-seeders/
+seeders/# Deployment trigger Sun, Nov  9, 2025  1:49:38 PM
