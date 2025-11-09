@@ -22,6 +22,7 @@ import { AdminUsers } from './pages/admin/AdminUsers';
 import { AdminAnalytics } from './pages/admin/AdminAnalytics';
 import { AdminSiteSettings } from './pages/admin/AdminSiteSettings';
 import AdminPages from './pages/admin/AdminPages';
+import { AdminBlogCategories } from './pages/admin/AdminBlogCategories';
 import { NotFound } from './pages/NotFound';
 import SEOTest from './pages/SEOTest';
 import { AuthProvider } from './context/AuthContext';
@@ -48,6 +49,7 @@ function AppContent() {
           <Route path="/admin/users" element={<AdminUsers />} />
           <Route path="/admin/analytics" element={<AdminAnalytics />} />
           <Route path="/admin/pages" element={<AdminPages />} />
+          <Route path="/admin/blog/categories" element={<AdminBlogCategories />} />
           <Route path="/admin/settings" element={<AdminSiteSettings />} />
           
           {/* 404 Route for admin */}

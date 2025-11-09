@@ -12,6 +12,7 @@ const skillsRoutes = require('./skills');
 const testimonialsRoutes = require('./testimonials');
 const pagesRoutes = require('./pages');
 const dashboardRoutes = require('./dashboard');
+const categoriesRoutes = require('./categories');
 
 const router = express.Router();
 
@@ -49,7 +50,8 @@ router.get('/health', async (req, res) => {
         skills: '/api/skills - Skills & technologies',
         testimonials: '/api/testimonials - Client testimonials management',
         pages: '/api/pages - Page management & SEO',
-        dashboard: '/api/dashboard - Admin dashboard statistics & analytics'
+        dashboard: '/api/dashboard - Admin dashboard statistics & analytics',
+        categories: '/api/categories - Blog categories management'
       }
     });
   } catch (error) {
@@ -111,6 +113,7 @@ router.use('/skills', skillsRoutes);
 router.use('/testimonials', testimonialsRoutes);
 router.use('/pages', pagesRoutes);
 router.use('/dashboard', dashboardRoutes);
+router.use('/categories', categoriesRoutes);
 
 // 404 handler for API routes
 router.use('*', (req, res) => {

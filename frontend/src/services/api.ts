@@ -203,6 +203,21 @@ export const profileService = {
   getAnalytics: () => api.get('/profile/analytics'),
 };
 
+// Categories API
+export const categoriesService = {
+  getAll: (params?: any) => api.get('/categories', { params }),
+  getById: (id: string) => api.get(`/categories/${id}`),
+  // Admin routes
+  getAllAdmin: (params?: any) => api.get('/categories/admin', { params }),
+  create: (data: any) => api.post('/categories', data),
+  update: (id: string, data: any) => api.put(`/categories/${id}`, data),
+  delete: (id: string) => api.delete(`/categories/${id}`),
+  updateOrder: (categories: Array<{ id: string; order: number }>) => 
+    api.put('/categories/bulk/order', { categories }),
+  updateCounts: () => api.put('/categories/bulk/update-counts'),
+  getStats: () => api.get('/categories/admin/stats'),
+};
+
 // Health check
 export const healthCheck = () => api.get('/health');
 

@@ -76,3 +76,4 @@ test-results/
 # Build outputs (if any)
 dist/
 build/
+.vercel

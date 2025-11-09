@@ -9,6 +9,7 @@ const Skill = require('./Skill');
 const Settings = require('./Settings');
 const Testimonial = require('./Testimonial');
 const Page = require('./Page');
+const Category = require('./Category');
 
 module.exports = {
   User,
@@ -20,5 +21,6 @@ module.exports = {
   Skill,
   Settings,
   Testimonial,
-  Page
+  Page,
+  Category
 };

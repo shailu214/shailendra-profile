@@ -3,7 +3,7 @@ require('dotenv').config();
 
 // Import database configuration and models
 const { connectDB, disconnectDB } = require('./config/database');
-const { User, Blog, Portfolio, Settings, SEO, Profile } = require('./models');
+const { User, Blog, Portfolio, Settings, SEO, Profile, Category } = require('./models');
 
 const seedProductionData = async () => {
   try {
@@ -244,6 +244,54 @@ const seedProductionData = async () => {
     await SEO.insertMany(seoPages);
     console.log('🔍 SEO data created for main pages');
 
+    // Create blog categories
+    const categories = await Category.create([
+      {
+        name: 'Web Development',
+        description: 'Articles about web development, frontend and backend technologies',
+        color: '#3B82F6',
+        order: 0,
+        isActive: true
+      },
+      {
+        name: 'JavaScript',
+        description: 'JavaScript tutorials, tips, and best practices',
+        color: '#F59E0B',
+        order: 1,
+        isActive: true
+      },
+      {
+        name: 'React',
+        description: 'React.js development guides and component tutorials',
+        color: '#06B6D4',
+        order: 2,
+        isActive: true
+      },
+      {
+        name: 'Node.js',
+        description: 'Server-side JavaScript and backend development',
+        color: '#10B981',
+        order: 3,
+        isActive: true
+      },
+      {
+        name: 'Tutorials',
+        description: 'Step-by-step programming tutorials and guides',
+        color: '#8B5CF6',
+        order: 4,
+        isActive: true
+      },
+      {
+        name: 'Technology',
+        description: 'Tech industry trends, tools, and insights',
+        color: '#EC4899',
+        order: 5,
+        isActive: true
+      }
+    ]);
+
+    console.log('📂 Blog categories created');
+
     // Create a sample blog post
     const sampleBlogPost = await Blog.create({
       title: 'Welcome to My Portfolio Blog',
@@ -266,7 +314,7 @@ I believe in writing clean, maintainable code and creating user experiences that
 
 Happy coding! 🚀`,
       author: adminUser._id,
-      category: 'General',
+      category: 'Web Development',
       tags: ['welcome', 'introduction', 'web development'],
       featuredImage: 'https://via.placeholder.com/800x400',
       isPublished: true,

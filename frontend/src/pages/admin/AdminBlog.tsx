@@ -5,7 +5,7 @@ import { ToastContainer } from '../../components/admin/Toast';
 import { YoastSEOAnalyzer } from '../../components/admin/YoastSEOAnalyzer';
 import { RichTextEditor } from '../../components/admin/RichTextEditor';
 import { useToast } from '../../hooks/useToast';
-import { blogService } from '../../services/api';
+import { blogService, categoriesService } from '../../services/api';
 import {
   Plus, 
   Edit, 
@@ -125,9 +125,10 @@ export const AdminBlog: React.FC = () => {
 
   const fetchMetadata = async () => {
     try {
-      const categoriesRes = await blogService.getCategories();
+      // Use the new categories service instead
+      const categoriesRes = await categoriesService.getAll();
       
-      setCategories(categoriesRes.data || []);
+      setCategories(categoriesRes.data?.map((cat: any) => cat.name) || []);
     } catch (err) {
       console.error('Error fetching metadata:', err);
     }
@@ -285,7 +286,14 @@ export const AdminBlog: React.FC = () => {
               Create, edit, and manage your blog posts and articles.
             </p>
           </div>
-          <div className="mt-4 sm:mt-0">
+          <div className="mt-4 sm:mt-0 flex items-center space-x-3">
+            <button 
+              onClick={() => window.open('/admin/blog/categories', '_blank')}
+              className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
+            >
+              <Tag className="w-4 h-4 mr-2" />
+              Manage Categories
+            </button>
             <button 
               onClick={handleAddPost}
               className="inline-flex items-center px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-medium transition-colors"

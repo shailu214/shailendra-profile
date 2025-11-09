@@ -441,16 +441,20 @@ router.put('/:id/comments/:commentId', protect, restrictTo('admin'), async (req,
   }
 });
 
-// @desc    Get blog categories
+// @desc    Get blog categories (redirects to categories API)
 // @route   GET /api/blogs/meta/categories
 // @access  Public
 router.get('/meta/categories', async (req, res) => {
   try {
-    const categories = await Blog.distinct('category', { isPublished: true });
+    // Use the new Category model instead of distinct from blogs
+    const { Category } = require('../models');
+    const categories = await Category.find({ isActive: true })
+      .select('name slug postCount')
+      .sort({ order: 1, name: 1 });
     
     res.json({
       success: true,
-      categories
+      categories: categories.map(cat => cat.name) // Return array of names for backward compatibility
     });
   } catch (error) {
     console.error('Get categories error:', error);
