@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { AdminLayout } from '../../components/admin/AdminLayout';
 import { ConfirmationModal } from '../../components/admin/ConfirmationModal';
 import { ToastContainer } from '../../components/admin/Toast';
@@ -56,6 +57,7 @@ import {
 }
 
 export const AdminBlog: React.FC = () => {
+  const navigate = useNavigate();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [categoryFilter, setCategoryFilter] = useState('all');
@@ -288,7 +290,7 @@ export const AdminBlog: React.FC = () => {
           </div>
           <div className="mt-4 sm:mt-0 flex items-center space-x-3">
             <button 
-              onClick={() => window.open('/admin/blog/categories', '_blank')}
+              onClick={() => navigate('/admin/blog/categories')}
               className="inline-flex items-center px-3 py-2 border border-gray-300 rounded-lg text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 transition-colors"
             >
               <Tag className="w-4 h-4 mr-2" />
