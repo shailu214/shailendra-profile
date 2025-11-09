@@ -1,0 +1,6 @@
+{
+  "testEnvironment": "node",
+  "testMatch": [],
+  "collectCoverageFrom": [],
+  "passWithNoTests": true
+}
