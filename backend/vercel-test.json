@@ -1,0 +1,16 @@
+{
+  "version": 2,
+  "name": "portfolio-backend-test",
+  "builds": [
+    {
+      "src": "test-server.js",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/test-server.js"
+    }
+  ]
+}

@@ -9,9 +9,6 @@ const mongoose = require('mongoose');
 // Load environment variables
 dotenv.config();
 
-// Import database configuration
-const { connectDB } = require('./config/database');
-
 const app = express();
 const PORT = process.env.PORT || 5001;
 
@@ -46,49 +43,73 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files
 app.use('/uploads', express.static('uploads'));
 
-// Connect to database
-connectDB();
-
-// Ensure admin user exists (optimized for serverless)
-const ensureAdminUser = async () => {
+// Simple MongoDB connection for production
+const connectDB = async () => {
   try {
-    // Only create admin user in development or if explicitly requested
-    if (process.env.NODE_ENV === 'production' && !process.env.CREATE_ADMIN_USER) {
-      console.log('📦 Production mode: Skipping admin user creation');
-      return;
-    }
-
-    const { User } = require('./models');
-    const adminExists = await User.findOne({ email: 'admin@portfolio.com' });
-    
-    if (!adminExists) {
-      console.log('🔧 Creating default admin user...');
-      await User.create({
-        name: 'Admin User',
-        email: 'admin@portfolio.com',
-        password: 'admin123',
-        role: 'admin',
-        bio: 'Portfolio website administrator'
+    if (process.env.MONGODB_URI) {
+      console.log('🌐 Connecting to MongoDB Atlas...');
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
+        maxPoolSize: 5,
+        serverSelectionTimeoutMS: 10000,
+        connectTimeoutMS: 10000,
+        retryWrites: true,
       });
-      console.log('✅ Default admin user created successfully');
+      console.log('✅ MongoDB Connected successfully');
     } else {
-      console.log('✅ Admin user already exists');
+      console.log('⚠️  No MONGODB_URI - running without database');
     }
   } catch (error) {
-    console.error('❌ Error with admin user:', error.message);
-    // Don't fail the entire server if admin creation fails
+    console.error('❌ MongoDB Connection Error:', error.message);
+    // Don't fail the server startup in production
   }
 };
 
-// Create admin user after database connection, but don't block server startup
-mongoose.connection.once('open', () => {
-  // Run admin creation in background, don't block
-  setImmediate(ensureAdminUser);
+// Connect to database
+connectDB();
+
+// Health check endpoint
+app.get('/', (req, res) => {
+  res.json({
+    success: true,
+    message: 'Portfolio Backend API is running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    mongodb: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected'
+  });
 });
 
-// API Routes
-const apiRoutes = require('./routes');
-app.use('/api', apiRoutes);
+app.get('/api/health', (req, res) => {
+  res.json({
+    success: true,
+    service: 'Portfolio Website API',
+    message: 'API server is healthy and running',
+    timestamp: new Date().toISOString(),
+    environment: process.env.NODE_ENV || 'development',
+    database: {
+      status: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
+      name: mongoose.connection.name || 'Not connected'
+    }
+  });
+});
+
+// API Routes - Load conditionally to prevent startup failures
+try {
+  const apiRoutes = require('./routes');
+  app.use('/api', apiRoutes);
+  console.log('✅ API routes loaded successfully');
+} catch (error) {
+  console.error('❌ Error loading API routes:', error.message);
+  // Provide fallback routes for basic functionality
+  app.get('/api/*', (req, res) => {
+    res.status(503).json({
+      success: false,
+      message: 'API routes not available',
+      error: 'Server is starting up'
+    });
+  });
+}
 
 // 404 handler
 app.use('*', (req, res) => {
