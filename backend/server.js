@@ -31,7 +31,9 @@ app.use(cors({
     'http://localhost:5173',
     'http://localhost:5174',  // Allow both frontend ports
     'http://localhost:5175',  // Allow for other ports
-    'http://localhost:5003'   // Allow backend port for testing
+    'http://localhost:5003',   // Allow backend port for testing
+    'https://myportfolio-nxkkfu9uk-shailu214s-projects.vercel.app', // Production frontend
+    'https://myportfolio-backend-shailu214s-projects.vercel.app'     // Production backend
   ],
   credentials: true
 }));
