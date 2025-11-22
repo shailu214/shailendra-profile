@@ -1,4 +1,4 @@
-// Force Vercel Redeploy 6 - Enhanced MongoDB diagnostics
+// Force Vercel Redeploy - Clean server.js with proper syntax and MongoDB connection
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -13,7 +13,7 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5001;
 
-// Trust Vercel Proxy (Required for rate limiting behind proxy)
+// Trust Vercel Proxy (required for rate limiting behind proxy)
 app.set('trust proxy', 1);
 
 // Security middleware
@@ -55,18 +55,17 @@ let connectionError = null;
 const connectDB = async () => {
   try {
     if (process.env.MONGODB_URI) {
-      // Log masked URI for debugging
       const uri = process.env.MONGODB_URI;
       const maskedUri = uri.replace(/:([^:@]+)@/, ':****@');
       console.log(`🌐 Attempting to connect to MongoDB: ${maskedUri}`);
 
-      await mongoose.connect(process.env.MONGODB_URI, {
+      await mongoose.connect(uri, {
         useUnifiedTopology: true,
         useNewUrlParser: true,
         maxPoolSize: 5,
         serverSelectionTimeoutMS: 5000,
         connectTimeoutMS: 10000,
-        retryWrites: true,
+        retryWrites: true
       });
       console.log('✅ MongoDB Connected successfully');
       console.log(`📊 Database Name: ${mongoose.connection.name}`);
@@ -82,8 +81,6 @@ const connectDB = async () => {
     console.error(`   Message: ${error.message}`);
     console.error(`   Code: ${error.code}`);
     if (error.cause) console.error(`   Cause: ${error.cause}`);
-
-    // Store error for debugging endpoint
     connectionError = {
       name: error.name,
       message: error.message,
@@ -96,7 +93,7 @@ const connectDB = async () => {
 // Connect to database
 connectDB();
 
-// Health check endpoint
+// Health check endpoint (root)
 app.get('/', (req, res) => {
   res.json({
     success: true,
@@ -107,6 +104,7 @@ app.get('/', (req, res) => {
   });
 });
 
+// API health endpoint
 app.get('/api/health', (req, res) => {
   res.json({
     success: true,
@@ -116,12 +114,14 @@ app.get('/api/health', (req, res) => {
     environment: process.env.NODE_ENV || 'development',
     database: {
       status: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
-      name: mongoose.connection.name || 'Not connected'
+      name: mongoose.connection.name || null,
+      host: mongoose.connection.host || null,
+      error: connectionError || null
     }
   });
 });
 
-// Debug endpoint to show connection error
+// Debug endpoint for DB connection details
 app.get('/api/debug/db', (req, res) => {
   res.json({
     connectionState: mongoose.connection.readyState,
@@ -139,14 +139,14 @@ app.get('/api/debug/db', (req, res) => {
   });
 });
 
-// API Routes - Load conditionally to prevent startup failures
+// Load API routes (if any)
 try {
   const apiRoutes = require('./routes');
   app.use('/api', apiRoutes);
   console.log('✅ API routes loaded successfully');
 } catch (error) {
   console.error('❌ Error loading API routes:', error.message);
-  // Provide fallback routes for basic functionality
+  // Fallback for API routes
   app.get('/api/*', (req, res) => {
     res.status(503).json({
       success: false,
@@ -173,7 +173,7 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);;
+  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
 });
 
 module.exports = app;
