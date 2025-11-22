@@ -1,4 +1,4 @@
-// Force Vercel Redeploy 5 - Add debug endpoint
+// Force Vercel Redeploy 6 - Enhanced MongoDB diagnostics
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
