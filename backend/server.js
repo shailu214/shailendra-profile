@@ -1,4 +1,4 @@
-// Force Vercel Redeploy 4 - Complete fix
+// Force Vercel Redeploy 5 - Add debug endpoint
 const express = require('express');
 const cors = require('cors');
 const dotenv = require('dotenv');
@@ -50,6 +50,8 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 app.use('/uploads', express.static('uploads'));
 
 // Simple MongoDB connection for production
+let connectionError = null;
+
 const connectDB = async () => {
   try {
     if (process.env.MONGODB_URI) {
@@ -69,8 +71,10 @@ const connectDB = async () => {
       console.log('✅ MongoDB Connected successfully');
       console.log(`📊 Database Name: ${mongoose.connection.name}`);
       console.log(`🔌 Host: ${mongoose.connection.host}`);
+      connectionError = null;
     } else {
       console.log('⚠️  No MONGODB_URI - running without database');
+      connectionError = { message: 'MONGODB_URI environment variable not set' };
     }
   } catch (error) {
     console.error('❌ MongoDB Connection Error Details:');
@@ -78,6 +82,14 @@ const connectDB = async () => {
     console.error(`   Message: ${error.message}`);
     console.error(`   Code: ${error.code}`);
     if (error.cause) console.error(`   Cause: ${error.cause}`);
+
+    // Store error for debugging endpoint
+    connectionError = {
+      name: error.name,
+      message: error.message,
+      code: error.code,
+      cause: error.cause?.toString()
+    };
   }
 };
 
@@ -106,6 +118,24 @@ app.get('/api/health', (req, res) => {
       status: mongoose.connection.readyState === 1 ? 'Connected' : 'Disconnected',
       name: mongoose.connection.name || 'Not connected'
     }
+  });
+});
+
+// Debug endpoint to show connection error
+app.get('/api/debug/db', (req, res) => {
+  res.json({
+    connectionState: mongoose.connection.readyState,
+    connectionStates: {
+      0: 'disconnected',
+      1: 'connected',
+      2: 'connecting',
+      3: 'disconnecting'
+    },
+    currentState: ['disconnected', 'connected', 'connecting', 'disconnecting'][mongoose.connection.readyState],
+    hasMongoUri: !!process.env.MONGODB_URI,
+    error: connectionError,
+    dbName: mongoose.connection.name || null,
+    host: mongoose.connection.host || null
   });
 });
 
@@ -143,7 +173,7 @@ app.use((err, req, res, next) => {
 // Start server
 app.listen(PORT, () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);
+  console.log(`📱 Environment: ${process.env.NODE_ENV || 'development'}`);;
 });
 
 module.exports = app;
