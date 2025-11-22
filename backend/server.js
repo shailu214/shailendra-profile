@@ -1,12 +1,3 @@
-const mongoose = require('mongoose');
-
-// Load environment variables
-dotenv.config();
-
-const app = express();
-const PORT = process.env.PORT || 5001;
-
-// Trust Vercel Proxy (Required for rate limiting behind proxy)
 app.set('trust proxy', 1);
 
 // Security middleware
