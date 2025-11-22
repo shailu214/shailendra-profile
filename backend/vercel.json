@@ -1,6 +1,5 @@
 {
   "version": 2,
-  "name": "portfolio-backend",
   "builds": [
     {
       "src": "server.js",
@@ -18,12 +17,5 @@
   ],
   "env": {
     "NODE_ENV": "production"
-  },
-  "functions": {
-    "server.js": {
-      "maxDuration": 30
-    }
-  },
-  "installCommand": "npm install --only=production",
-  "buildCommand": "echo 'No build step required'"
+  }
 }

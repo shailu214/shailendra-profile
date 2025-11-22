@@ -39,3 +39,4 @@ Thumbs.db
 
 # Documentation build
 docs/build/
+.vercel
