@@ -3,6 +3,87 @@ const cors = require('cors');
 const dotenv = require('dotenv');
 const helmet = require('helmet');
 const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
+
+// Load environment variables
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Trust Vercel Proxy (Required for rate limiting behind proxy)
+app.set('trust proxy', 1);
+
+// Security middleware
+app.use(helmet());
+app.use(compression());
+
+// Rate limiting
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100 // limit each IP to 100 requests per windowMs
+});
+app.use(limiter);
+
+// CORS configuration
+app.use(cors({
+  origin: [
+    'http://localhost:5173',
+    'http://localhost:5174',
+    'http://localhost:5175',
+    'http://localhost:5003',
+    'https://myportfolio-nxkkfu9uk-shailu214s-projects.vercel.app',
+    'https://myportfolio-backend-shailu214s-projects.vercel.app',
+    'https://shailendrachaurasia.com',
+    'https://www.shailendrachaurasia.com'
+  ],
+  credentials: true
+}));
+
+// Body parsing middleware
+app.use(express.json({ limit: '10mb' }));
+app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+
+// Static files
+app.use('/uploads', express.static('uploads'));
+
+// Simple MongoDB connection for production
+const connectDB = async () => {
+  try {
+    if (process.env.MONGODB_URI) {
+      // Log masked URI for debugging
+      const uri = process.env.MONGODB_URI;
+      const maskedUri = uri.replace(/:([^:@]+)@/, ':****@');
+      console.log(`🌐 Attempting to connect to MongoDB: ${maskedUri}`);
+
+      await mongoose.connect(process.env.MONGODB_URI, {
+        useUnifiedTopology: true,
+        useNewUrlParser: true,
+        maxPoolSize: 5,
+        serverSelectionTimeoutMS: 5000,
+        connectTimeoutMS: 10000,
+        retryWrites: true,
+      });
+      console.log('✅ MongoDB Connected successfully');
+      console.log(`📊 Database Name: ${mongoose.connection.name}`);
+      console.log(`🔌 Host: ${mongoose.connection.host}`);
+    } else {
+      console.log('⚠️  No MONGODB_URI - running without database');
+    }
+  } catch (error) {
+    console.error('❌ MongoDB Connection Error Details:');
+    console.error(`   Name: ${error.name}`);
+    console.error(`   Message: ${error.message}`);
+    console.error(`   Code: ${error.code}`);
+    if (error.cause) console.error(`   Cause: ${error.cause}`);
+  }
+};
+
+// Connect to database
+connectDB();
+
+// Health check endpoint
 app.get('/', (req, res) => {
   res.json({
     success: true,
