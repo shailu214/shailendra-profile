@@ -1,10 +1,3 @@
-// Force Vercel Redeploy - Fix Database Connection
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-const helmet = require('helmet');
-const compression = require('compression');
-const rateLimit = require('express-rate-limit');
 const mongoose = require('mongoose');
 
 // Load environment variables
