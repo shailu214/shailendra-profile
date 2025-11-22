@@ -1,3 +1,19 @@
+// Force Vercel Redeploy 4 - Complete fix
+const express = require('express');
+const cors = require('cors');
+const dotenv = require('dotenv');
+const helmet = require('helmet');
+const compression = require('compression');
+const rateLimit = require('express-rate-limit');
+const mongoose = require('mongoose');
+
+// Load environment variables
+dotenv.config();
+
+const app = express();
+const PORT = process.env.PORT || 5001;
+
+// Trust Vercel Proxy (Required for rate limiting behind proxy)
 app.set('trust proxy', 1);
 
 // Security middleware
