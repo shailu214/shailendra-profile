@@ -35,27 +35,6 @@ jobs:
       env:
         NODE_ENV: test
         
-    - name: 🔍 Backend security audit
-      continue-on-error: true
-      run: |
-        cd backend
-        npm audit --audit-level moderate
-        
-    - name: 🚀 Deploy to Vercel (Backend)
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
-        working-directory: ./backend
-        vercel-args: '--prod'
-        
-  # Frontend Build and Deployment  
-  frontend-deploy:
-    name: 🎨 Frontend Deployment
-    runs-on: ubuntu-latest
-    needs: backend-deploy
     
     steps:
     - name: 📥 Checkout code
@@ -90,27 +69,6 @@ jobs:
       run: |
         cd frontend
         npm audit --audit-level moderate
-        
-    - name: 📊 Bundle size analysis
-      run: |
-        cd frontend
-        npx vite-bundle-analyzer dist/
-        
-    - name: 🚀 Deploy to Vercel (Frontend)
-      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
-      uses: amondnet/vercel-action@v25
-      with:
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_FRONTEND_PROJECT_ID }}
-        working-directory: ./frontend
-        vercel-args: '--prod'
-        
-  # Database Seeding (Production)
-  seed-production:
-    name: 🌱 Production Database Seeding
-    runs-on: ubuntu-latest
-    needs: [backend-deploy, frontend-deploy]
     if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
     
     steps:
