@@ -19,23 +19,23 @@ router.get('/', async (req, res) => {
 
     // Build query for published items only
     let query = { isPublished: true };
-    
+
     if (search) {
       query.$text = { $search: search };
     }
-    
+
     if (category) {
       query.category = category;
     }
-    
+
     if (technology) {
       query['technologies.name'] = { $regex: technology, $options: 'i' };
     }
-    
+
     if (featured) {
       query.isFeatured = true;
     }
-    
+
     if (status) {
       query.status = status;
     }
@@ -89,19 +89,19 @@ router.get('/admin', protect, restrictTo('admin'), async (req, res) => {
 
     // Build query
     let query = {};
-    
+
     if (search) {
       query.$text = { $search: search };
     }
-    
+
     if (category) {
       query.category = category;
     }
-    
+
     if (status) {
       query.status = status;
     }
-    
+
     if (published) {
       query.isPublished = published === 'true';
     }
@@ -138,9 +138,9 @@ router.get('/admin', protect, restrictTo('admin'), async (req, res) => {
 // @access  Public
 router.get('/:slug', async (req, res) => {
   try {
-    const portfolioItem = await Portfolio.findOne({ 
+    const portfolioItem = await Portfolio.findOne({
       slug: req.params.slug,
-      isPublished: true 
+      isPublished: true
     });
 
     if (!portfolioItem) {
@@ -198,7 +198,41 @@ router.get('/admin/:id', protect, restrictTo('admin'), async (req, res) => {
 // @access  Private/Admin
 router.post('/', protect, restrictTo('admin'), async (req, res) => {
   try {
-    const portfolioItem = await Portfolio.create(req.body);
+    // Transform data to match schema
+    const portfolioData = { ...req.body };
+
+    // 1. Handle Technologies (convert string array to object array)
+    if (Array.isArray(portfolioData.technologies) && portfolioData.technologies.length > 0) {
+      if (typeof portfolioData.technologies[0] === 'string') {
+        portfolioData.technologies = portfolioData.technologies.map(tech => ({
+          name: tech,
+          icon: '', // Default or could be mapped
+          color: '#3B82F6' // Default blue
+        }));
+      }
+    }
+
+    // 2. Handle Images (convert string array to object array)
+    if (Array.isArray(portfolioData.images) && portfolioData.images.length > 0) {
+      if (typeof portfolioData.images[0] === 'string') {
+        portfolioData.images = portfolioData.images.map((url, index) => ({
+          url,
+          alt: portfolioData.title || 'Project Image',
+          isPrimary: index === 0
+        }));
+      }
+    }
+
+    // 3. Handle Missing Required Fields
+    if (!portfolioData.detailedDescription) {
+      portfolioData.detailedDescription = portfolioData.description;
+    }
+
+    if (!portfolioData.startDate) {
+      portfolioData.startDate = new Date();
+    }
+
+    const portfolioItem = await Portfolio.create(portfolioData);
 
     res.status(201).json({
       success: true,
@@ -207,7 +241,7 @@ router.post('/', protect, restrictTo('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Create portfolio item error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -229,9 +263,39 @@ router.post('/', protect, restrictTo('admin'), async (req, res) => {
 // @access  Private/Admin
 router.put('/:id', protect, restrictTo('admin'), async (req, res) => {
   try {
+    // Transform data to match schema
+    const portfolioData = { ...req.body };
+
+    // 1. Handle Technologies (convert string array to object array)
+    if (Array.isArray(portfolioData.technologies) && portfolioData.technologies.length > 0) {
+      if (typeof portfolioData.technologies[0] === 'string') {
+        portfolioData.technologies = portfolioData.technologies.map(tech => ({
+          name: tech,
+          icon: '',
+          color: '#3B82F6'
+        }));
+      }
+    }
+
+    // 2. Handle Images (convert string array to object array)
+    if (Array.isArray(portfolioData.images) && portfolioData.images.length > 0) {
+      if (typeof portfolioData.images[0] === 'string') {
+        portfolioData.images = portfolioData.images.map((url, index) => ({
+          url,
+          alt: portfolioData.title || 'Project Image',
+          isPrimary: index === 0
+        }));
+      }
+    }
+
+    // 3. Handle Missing Required Fields
+    if (!portfolioData.detailedDescription && portfolioData.description) {
+      portfolioData.detailedDescription = portfolioData.description;
+    }
+
     const portfolioItem = await Portfolio.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      portfolioData,
       { new: true, runValidators: true }
     );
 
@@ -249,7 +313,7 @@ router.put('/:id', protect, restrictTo('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Update portfolio item error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -329,9 +393,9 @@ router.put('/:id/featured', protect, restrictTo('admin'), async (req, res) => {
 // @access  Public
 router.put('/:slug/like', async (req, res) => {
   try {
-    const portfolioItem = await Portfolio.findOne({ 
+    const portfolioItem = await Portfolio.findOne({
       slug: req.params.slug,
-      isPublished: true 
+      isPublished: true
     });
 
     if (!portfolioItem) {
@@ -365,7 +429,7 @@ router.put('/:slug/like', async (req, res) => {
 router.get('/meta/categories', async (req, res) => {
   try {
     const categories = await Portfolio.distinct('category', { isPublished: true });
-    
+
     res.json({
       success: true,
       categories
@@ -387,13 +451,13 @@ router.get('/meta/technologies', async (req, res) => {
     const technologies = await Portfolio.aggregate([
       { $match: { isPublished: true } },
       { $unwind: '$technologies' },
-      { 
-        $group: { 
-          _id: '$technologies.name', 
+      {
+        $group: {
+          _id: '$technologies.name',
           count: { $sum: 1 },
           color: { $first: '$technologies.color' },
           icon: { $first: '$technologies.icon' }
-        } 
+        }
       },
       { $sort: { count: -1 } },
       { $limit: 20 }
