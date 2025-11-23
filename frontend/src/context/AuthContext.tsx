@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState } from 'react';
 import type { ReactNode } from 'react';
+import { authService } from '../services/api';
 
 interface User {
   id: string;
@@ -31,12 +32,6 @@ interface AuthProviderProps {
   children: ReactNode;
 }
 
-// Simple hardcoded admin credentials (no backend required)
-const ADMIN_CREDENTIALS = {
-  email: 'admin@portfolio.com',
-  password: 'admin123'
-};
-
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(() => {
     // Check if user is already logged in
@@ -47,36 +42,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     setLoading(true);
-    
-    return new Promise<void>((resolve, reject) => {
-      setTimeout(() => {
-        console.log('🔐 Simple Auth: Checking credentials...');
-        
-        if (email === ADMIN_CREDENTIALS.email && password === ADMIN_CREDENTIALS.password) {
-          const adminUser: User = {
-            id: '1',
-            email: 'admin@portfolio.com',
-            name: 'Shailendra Chaurasia',
-            role: 'admin'
-          };
-          
-          console.log('✅ Simple Auth: Login successful!');
-          setUser(adminUser);
-          localStorage.setItem('admin_user', JSON.stringify(adminUser));
-          localStorage.setItem('auth_token', 'demo-token-123');
-          setLoading(false);
-          resolve();
-        } else {
-          console.log('❌ Simple Auth: Invalid credentials');
-          setLoading(false);
-          reject(new Error('Invalid email or password'));
-        }
-      }, 500); // Simulate brief loading
-    });
+    try {
+      console.log('🔐 AuthContext: Calling login API...');
+      const response = await authService.login(email, password);
+      console.log('✅ AuthContext: Login successful', response);
+
+      // The response structure might vary, adapting to common patterns
+      const token = response.token || response.data?.token;
+      const userData = response.user || response.data?.user;
+
+      if (token && userData) {
+        localStorage.setItem('auth_token', token);
+        localStorage.setItem('admin_user', JSON.stringify(userData));
+        setUser(userData);
+      } else {
+        console.error('❌ AuthContext: Invalid response structure', response);
+        throw new Error('Invalid response from server');
+      }
+    } catch (error: any) {
+      console.error('❌ AuthContext: Login failed', error);
+      throw new Error(error.response?.data?.message || error.message || 'Login failed');
+    } finally {
+      setLoading(false);
+    }
   };
 
   const logout = () => {
-    console.log('🔓 Simple Auth: Logging out...');
+    console.log('🔓 AuthContext: Logging out...');
     setUser(null);
     localStorage.removeItem('admin_user');
     localStorage.removeItem('auth_token');
