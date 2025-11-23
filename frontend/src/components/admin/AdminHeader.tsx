@@ -1,5 +1,5 @@
 import React, { useRef, useEffect } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { Bell, Search, Settings, LogOut, Menu, User, ChevronRight, Home } from 'lucide-react';
 
@@ -9,6 +9,7 @@ interface AdminHeaderProps {
 
 export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
   const { logout } = useAuth();
+  const navigate = useNavigate();
   const location = useLocation();
   const [showNotifications, setShowNotifications] = React.useState(false);
   const [showUserMenu, setShowUserMenu] = React.useState(false);
@@ -62,6 +63,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
 
   const breadcrumbs = getBreadcrumbs();
 
+  const handleLogout = () => {
+    logout();
+    navigate('/admin/login');
+  };
+
   // Sample notifications data
   const notifications = [
     {
@@ -103,7 +109,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
           >
             <Menu className="w-5 h-5 text-gray-600" />
           </button>
-          
+
           <div className="hidden lg:block">
             {/* Breadcrumbs */}
             <nav className="flex items-center space-x-2 text-sm text-gray-600 mb-1">
@@ -112,9 +118,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                   {index > 0 && <ChevronRight className="w-4 h-4 mx-2 text-gray-400" />}
                   <Link
                     to={breadcrumb.path}
-                    className={`flex items-center space-x-1 hover:text-gray-900 transition-colors ${
-                      location.pathname === breadcrumb.path ? 'text-blue-600 font-medium' : ''
-                    }`}
+                    className={`flex items-center space-x-1 hover:text-gray-900 transition-colors ${location.pathname === breadcrumb.path ? 'text-blue-600 font-medium' : ''
+                      }`}
                   >
                     {breadcrumb.icon && <breadcrumb.icon className="w-4 h-4" />}
                     <span>{breadcrumb.name}</span>
@@ -126,11 +131,11 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
               {breadcrumbs[breadcrumbs.length - 1].name}
             </h1>
             <p className="text-sm text-gray-600">
-              {breadcrumbs[breadcrumbs.length - 1].name === 'Dashboard' 
+              {breadcrumbs[breadcrumbs.length - 1].name === 'Dashboard'
                 ? 'Welcome back, manage your portfolio'
                 : breadcrumbs[breadcrumbs.length - 1].name === 'Pages'
-                ? 'Manage website pages with SEO optimization'
-                : `Manage your ${breadcrumbs[breadcrumbs.length - 1].name.toLowerCase()}`
+                  ? 'Manage website pages with SEO optimization'
+                  : `Manage your ${breadcrumbs[breadcrumbs.length - 1].name.toLowerCase()}`
               }
             </p>
           </div>
@@ -152,7 +157,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
         <div className="flex items-center space-x-4">
           {/* Notifications */}
           <div className="relative" ref={notificationRef}>
-            <button 
+            <button
               onClick={() => setShowNotifications(!showNotifications)}
               className="relative p-2 rounded-lg hover:bg-gray-100 transition-colors"
             >
@@ -178,16 +183,14 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
                     notifications.map((notification) => (
                       <div
                         key={notification.id}
-                        className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${
-                          !notification.read ? 'bg-blue-50' : ''
-                        }`}
+                        className={`p-4 border-b border-gray-100 hover:bg-gray-50 cursor-pointer ${!notification.read ? 'bg-blue-50' : ''
+                          }`}
                       >
                         <div className="flex items-start space-x-3">
-                          <div className={`w-2 h-2 rounded-full mt-2 ${
-                            notification.type === 'message' ? 'bg-blue-500' :
-                            notification.type === 'success' ? 'bg-green-500' :
-                            'bg-gray-400'
-                          }`} />
+                          <div className={`w-2 h-2 rounded-full mt-2 ${notification.type === 'message' ? 'bg-blue-500' :
+                              notification.type === 'success' ? 'bg-green-500' :
+                                'bg-gray-400'
+                            }`} />
                           <div className="flex-1">
                             <p className="text-sm font-medium text-gray-900">
                               {notification.title}
@@ -218,7 +221,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
           </div>
 
           {/* Settings */}
-          <Link 
+          <Link
             to="/admin/settings"
             className="p-2 rounded-lg hover:bg-gray-100 transition-colors"
           >
@@ -241,7 +244,7 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
 
             {/* Logout Button */}
             <button
-              onClick={logout}
+              onClick={handleLogout}
               className="flex items-center space-x-2 px-3 py-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
             >
               <LogOut className="w-4 h-4" />
@@ -259,9 +262,8 @@ export const AdminHeader: React.FC<AdminHeaderProps> = ({ onMenuToggle }) => {
               {index > 0 && <ChevronRight className="w-3 h-3 mx-1 text-gray-400" />}
               <Link
                 to={breadcrumb.path}
-                className={`hover:text-gray-900 transition-colors ${
-                  location.pathname === breadcrumb.path ? 'text-blue-600 font-medium' : ''
-                }`}
+                className={`hover:text-gray-900 transition-colors ${location.pathname === breadcrumb.path ? 'text-blue-600 font-medium' : ''
+                  }`}
               >
                 {breadcrumb.name}
               </Link>
