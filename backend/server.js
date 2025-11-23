@@ -49,48 +49,77 @@ app.use(express.urlencoded({ extended: true, limit: '10mb' }));
 // Static files
 app.use('/uploads', express.static('uploads'));
 
-// Simple MongoDB connection for production
+// MongoDB connection with caching for serverless
 let connectionError = null;
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 const connectDB = async () => {
-  try {
-    if (process.env.MONGODB_URI) {
-      const uri = process.env.MONGODB_URI;
-      const maskedUri = uri.replace(/:([^:@]+)@/, ':****@');
-      console.log(`🌐 Attempting to connect to MongoDB: ${maskedUri}`);
-
-      await mongoose.connect(uri, {
-        useUnifiedTopology: true,
-        useNewUrlParser: true,
-        maxPoolSize: 5,
-        serverSelectionTimeoutMS: 5000,
-        connectTimeoutMS: 10000,
-        retryWrites: true
-      });
-      console.log('✅ MongoDB Connected successfully');
-      console.log(`📊 Database Name: ${mongoose.connection.name}`);
-      console.log(`🔌 Host: ${mongoose.connection.host}`);
-      connectionError = null;
-    } else {
-      console.log('⚠️  No MONGODB_URI - running without database');
-      connectionError = { message: 'MONGODB_URI environment variable not set' };
-    }
-  } catch (error) {
-    console.error('❌ MongoDB Connection Error Details:');
-    console.error(`   Name: ${error.name}`);
-    console.error(`   Message: ${error.message}`);
-    console.error(`   Code: ${error.code}`);
-    if (error.cause) console.error(`   Cause: ${error.cause}`);
-    connectionError = {
-      name: error.name,
-      message: error.message,
-      code: error.code,
-      cause: error.cause?.toString()
-    };
+  if (cached.conn) {
+    return cached.conn;
   }
+
+  if (!cached.promise) {
+    const opts = {
+      useUnifiedTopology: true,
+      useNewUrlParser: true,
+      bufferCommands: false,
+      maxPoolSize: 10,
+      serverSelectionTimeoutMS: 5000,
+      socketTimeoutMS: 45000,
+    };
+
+    const uri = process.env.MONGODB_URI;
+
+    if (!uri) {
+      console.error('❌ MONGODB_URI is missing');
+      connectionError = { message: 'MONGODB_URI is missing' };
+      return null;
+    }
+
+    console.log('🌐 Connecting to MongoDB...');
+    cached.promise = mongoose.connect(uri, opts).then((mongoose) => {
+      console.log('✅ MongoDB Connected successfully');
+      connectionError = null;
+      return mongoose;
+    }).catch((error) => {
+      console.error('❌ MongoDB Connection Error:', error);
+      connectionError = error;
+      cached.promise = null;
+      throw error;
+    });
+  }
+
+  try {
+    cached.conn = await cached.promise;
+  } catch (e) {
+    cached.promise = null;
+    throw e;
+  }
+
+  return cached.conn;
 };
 
-// Connect to database
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+  // Skip for static files
+  if (req.path.startsWith('/uploads')) {
+    return next();
+  }
+
+  try {
+    await connectDB();
+    next();
+  } catch (error) {
+    console.error('Database middleware error:', error);
+    next();
+  }
+});
+
+// Initialize connection
 connectDB();
 
 // Health check endpoint (root)
@@ -155,6 +184,5 @@ try {
     });
   });
 }
-
 
 module.exports = app;
