@@ -66,7 +66,7 @@ router.get('/public', async (req, res) => {
 router.get('/slug/:slug', async (req, res) => {
   try {
     const { slug } = req.params;
-    
+
     const profile = await Profile.findOne({ 'seo.slug': slug })
       .populate('user', 'name email')
       .select(Profile.getPublicFields());
@@ -113,7 +113,7 @@ router.get('/me', protect, async (req, res) => {
           slug: req.user.name.toLowerCase().replace(/[^a-z0-9 -]/g, '').replace(/\s+/g, '-')
         }
       });
-      
+
       await profile.populate('user', 'name email');
     }
 
@@ -152,7 +152,7 @@ router.put('/', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -161,7 +161,7 @@ router.put('/', protect, async (req, res) => {
         errors
       });
     }
-    
+
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -183,8 +183,8 @@ router.put('/section/:section', protect, async (req, res) => {
   try {
     const { section } = req.params;
     const allowedSections = [
-      'basicInfo', 'professional', 'skills', 'experience', 
-      'education', 'stats', 'personal', 'contactPreferences', 
+      'basicInfo', 'professional', 'skills', 'experience',
+      'education', 'stats', 'personal', 'contactPreferences',
       'seo', 'privacy', 'socialMedia'
     ];
 
@@ -195,8 +195,23 @@ router.put('/section/:section', protect, async (req, res) => {
       });
     }
 
-    const updateData = { [section]: req.body };
-    
+    let updateData = { [section]: req.body };
+
+    // Handle specific section transformations
+    if (section === 'skills') {
+      // Ensure skills are properly formatted
+      const skillsData = req.body;
+      if (skillsData.technical && Array.isArray(skillsData.technical)) {
+        skillsData.technical = skillsData.technical.map(skill => ({
+          name: skill.name || '',
+          category: skill.category || 'Other',
+          proficiency: skill.proficiency || 0,
+          icon: skill.icon || ''
+        }));
+      }
+      updateData = { skills: skillsData };
+    }
+
     const profile = await Profile.findOneAndUpdate(
       { user: req.user._id },
       updateData,
@@ -214,7 +229,7 @@ router.put('/section/:section', protect, async (req, res) => {
     });
   } catch (error) {
     console.error('Update profile section error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -244,7 +259,7 @@ router.post('/avatar', protect, upload.single('avatar'), async (req, res) => {
     }
 
     const avatarUrl = `/uploads/profiles/${req.file.filename}`;
-    
+
     const profile = await Profile.findOneAndUpdate(
       { user: req.user._id },
       {
@@ -289,7 +304,7 @@ router.post('/cover', protect, upload.single('cover'), async (req, res) => {
     }
 
     const coverUrl = `/uploads/profiles/${req.file.filename}`;
-    
+
     const profile = await Profile.findOneAndUpdate(
       { user: req.user._id },
       {
@@ -326,7 +341,7 @@ router.post('/cover', protect, upload.single('cover'), async (req, res) => {
 router.post('/experience', protect, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user._id });
-    
+
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -357,7 +372,7 @@ router.post('/experience', protect, async (req, res) => {
 router.put('/experience/:id', protect, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user._id });
-    
+
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -366,7 +381,7 @@ router.put('/experience/:id', protect, async (req, res) => {
     }
 
     const experienceIndex = profile.experience.findIndex(exp => exp._id.toString() === req.params.id);
-    
+
     if (experienceIndex === -1) {
       return res.status(404).json({
         success: false,
@@ -397,7 +412,7 @@ router.put('/experience/:id', protect, async (req, res) => {
 router.delete('/experience/:id', protect, async (req, res) => {
   try {
     const profile = await Profile.findOne({ user: req.user._id });
-    
+
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -429,7 +444,7 @@ router.post('/skills/:type', protect, async (req, res) => {
   try {
     const { type } = req.params;
     const allowedTypes = ['technical', 'soft', 'languages'];
-    
+
     if (!allowedTypes.includes(type)) {
       return res.status(400).json({
         success: false,
@@ -438,7 +453,7 @@ router.post('/skills/:type', protect, async (req, res) => {
     }
 
     const profile = await Profile.findOne({ user: req.user._id });
-    
+
     if (!profile) {
       return res.status(404).json({
         success: false,
@@ -471,7 +486,7 @@ router.get('/analytics', protect, restrictTo('admin'), async (req, res) => {
     const profileCount = await Profile.countDocuments();
     const publicProfiles = await Profile.countDocuments({ 'privacy.profileVisibility': 'Public' });
     const privateProfiles = await Profile.countDocuments({ 'privacy.profileVisibility': 'Private' });
-    
+
     const avgExperience = await Profile.aggregate([
       {
         $group: {

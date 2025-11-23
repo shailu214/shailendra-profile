@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { Bold, Italic, Underline, List, ListOrdered, Heading1, Heading2, Heading3, Link, Image, AlignLeft, AlignCenter, AlignRight } from 'lucide-react';
 
 interface RichTextEditorProps {
@@ -16,6 +16,31 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
 }) => {
   const [activeButtons, setActiveButtons] = useState<string[]>([]);
   const editorRef = useRef<HTMLDivElement>(null);
+  const isFocused = useRef(false);
+
+  // Sync value from props to editor, but ONLY if not focused (to avoid cursor jumps)
+  useEffect(() => {
+    if (editorRef.current && !isFocused.current && value !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = value;
+    }
+  }, [value]);
+
+  // Handle focus/blur to track state
+  useEffect(() => {
+    const editor = editorRef.current;
+    if (!editor) return;
+
+    const handleFocus = () => { isFocused.current = true; };
+    const handleBlur = () => { isFocused.current = false; };
+
+    editor.addEventListener('focus', handleFocus);
+    editor.addEventListener('blur', handleBlur);
+
+    return () => {
+      editor.removeEventListener('focus', handleFocus);
+      editor.removeEventListener('blur', handleBlur);
+    };
+  }, []);
 
   const handleCommand = (command: string, value?: string) => {
     document.execCommand(command, false, value);
@@ -23,67 +48,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     updateContent();
   };
 
-  const saveCursorPosition = () => {
-    const selection = window.getSelection();
-    if (selection && selection.rangeCount > 0 && editorRef.current?.contains(selection.focusNode)) {
-      const range = selection.getRangeAt(0);
-      return {
-        startContainer: range.startContainer,
-        startOffset: range.startOffset,
-        endContainer: range.endContainer,
-        endOffset: range.endOffset
-      };
-    }
-    return null;
-  };
-
-  const restoreCursorPosition = (savedPosition: any) => {
-    if (savedPosition && editorRef.current) {
-      try {
-        const selection = window.getSelection();
-        const range = document.createRange();
-        
-        // Check if the saved nodes are still in the DOM
-        if (editorRef.current.contains(savedPosition.startContainer) && 
-            editorRef.current.contains(savedPosition.endContainer)) {
-          range.setStart(savedPosition.startContainer, savedPosition.startOffset);
-          range.setEnd(savedPosition.endContainer, savedPosition.endOffset);
-          
-          selection?.removeAllRanges();
-          selection?.addRange(range);
-        }
-      } catch (e) {
-        // If restoration fails, place cursor at the end
-        const selection = window.getSelection();
-        const range = document.createRange();
-        range.selectNodeContents(editorRef.current);
-        range.collapse(false);
-        selection?.removeAllRanges();
-        selection?.addRange(range);
-      }
-    }
-  };
-
   const updateContent = () => {
     if (editorRef.current) {
-      const cursorPosition = saveCursorPosition();
       const htmlContent = editorRef.current.innerHTML;
-      
-      // Only update if content actually changed
       if (htmlContent !== value) {
         onChange(htmlContent);
-        
-        // Restore cursor position after a short delay
-        setTimeout(() => {
-          restoreCursorPosition(cursorPosition);
-        }, 0);
       }
     }
   };
 
   const updateActiveButtons = () => {
     const active: string[] = [];
-    
+
     if (document.queryCommandState('bold')) active.push('bold');
     if (document.queryCommandState('italic')) active.push('italic');
     if (document.queryCommandState('underline')) active.push('underline');
@@ -92,7 +68,7 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (document.queryCommandState('justifyRight')) active.push('alignRight');
     if (document.queryCommandState('insertUnorderedList')) active.push('unorderedList');
     if (document.queryCommandState('insertOrderedList')) active.push('orderedList');
-    
+
     setActiveButtons(active);
   };
 
@@ -101,22 +77,22 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
     if (selection && selection.rangeCount > 0) {
       const range = selection.getRangeAt(0);
       const selectedText = range.toString();
-      
+
       if (selectedText) {
         const heading = document.createElement(`h${level}`);
         heading.textContent = selectedText;
         heading.className = getHeadingClass(level);
-        
+
         range.deleteContents();
         range.insertNode(heading);
-        
+
         // Move cursor after the heading
         const afterRange = document.createRange();
         afterRange.setStartAfter(heading);
         afterRange.collapse(true);
         selection.removeAllRanges();
         selection.addRange(afterRange);
-        
+
         updateContent();
       }
     }
@@ -165,17 +141,16 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
             key={command}
             type="button"
             onClick={() => handleCommand(command)}
-            className={`p-2 rounded hover:bg-gray-200 transition-colors ${
-              activeButtons.includes(command) ? 'bg-blue-100 text-blue-600' : 'text-gray-600'
-            }`}
+            className={`p-2 rounded hover:bg-gray-200 transition-colors ${activeButtons.includes(command) ? 'bg-blue-100 text-blue-600' : 'text-gray-600'
+              }`}
             title={title}
           >
             <Icon size={16} />
           </button>
         ))}
-        
+
         <div className="w-px h-6 bg-gray-300 mx-1" />
-        
+
         <button
           type="button"
           onClick={() => insertHeading(1)}
@@ -200,9 +175,9 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
         >
           <Heading3 size={16} />
         </button>
-        
+
         <div className="w-px h-6 bg-gray-300 mx-1" />
-        
+
         <button
           type="button"
           onClick={insertLink}
@@ -233,19 +208,18 @@ export const RichTextEditor: React.FC<RichTextEditorProps> = ({
           // Allow paste but clean up after
           setTimeout(updateContent, 0);
         }}
-        dangerouslySetInnerHTML={{ __html: value }}
         className={`p-4 overflow-y-auto focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-inset`}
         style={{ minHeight: `${rows * 1.5}rem`, maxHeight: '16rem' }}
         data-placeholder={placeholder}
       />
-      
+
       {/* Placeholder when empty */}
       {!value && (
         <div className="absolute inset-x-4 top-16 text-gray-400 pointer-events-none">
           {placeholder}
         </div>
       )}
-      
+
       <style dangerouslySetInnerHTML={{
         __html: `
         .rich-text-editor [contenteditable]:empty:before {

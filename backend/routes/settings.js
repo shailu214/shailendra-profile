@@ -126,7 +126,7 @@ router.put('/', protect, restrictTo('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Update settings error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -150,8 +150,8 @@ router.put('/:section', protect, restrictTo('admin'), async (req, res) => {
   try {
     const { section } = req.params;
     const validSections = [
-      'site', 'personal', 'contact', 'social', 'theme', 
-      'navigation', 'homepage', 'analytics', 'email', 
+      'site', 'personal', 'contact', 'social', 'theme',
+      'navigation', 'homepage', 'analytics', 'email',
       'seo', 'security', 'maintenance'
     ];
 
@@ -163,7 +163,34 @@ router.put('/:section', protect, restrictTo('admin'), async (req, res) => {
     }
 
     let settings = await Settings.getInstance();
-    settings[section] = { ...settings[section], ...req.body };
+    let updateData = req.body;
+
+    // Handle specific section transformations
+    if (section === 'social') {
+      // Ensure social links are properly formatted
+      if (Array.isArray(updateData.links)) {
+        updateData.links = updateData.links.map(link => ({
+          platform: link.platform || 'Other',
+          url: link.url || '',
+          icon: link.icon || '',
+          enabled: link.enabled !== false
+        }));
+      }
+    } else if (section === 'navigation') {
+      // Ensure menu items are properly formatted
+      if (Array.isArray(updateData.menuItems)) {
+        updateData.menuItems = updateData.menuItems.map(item => ({
+          label: item.label || '',
+          path: item.path || '/',
+          isExternal: item.isExternal || false,
+          order: item.order || 0,
+          isActive: item.isActive !== false
+        }));
+      }
+    }
+
+    // Merge updates
+    settings[section] = { ...settings[section], ...updateData };
 
     await settings.save();
 
@@ -174,7 +201,7 @@ router.put('/:section', protect, restrictTo('admin'), async (req, res) => {
     });
   } catch (error) {
     console.error('Update settings section error:', error);
-    
+
     if (error.name === 'ValidationError') {
       const messages = Object.values(error.errors).map(err => err.message);
       return res.status(400).json({
@@ -228,7 +255,7 @@ router.put('/maintenance', protect, restrictTo('admin'), async (req, res) => {
     const { mode, message, allowedIPs, estimatedTime } = req.body;
 
     let settings = await Settings.getInstance();
-    
+
     settings.maintenance.mode = mode;
     if (message) settings.maintenance.message = message;
     if (allowedIPs) settings.maintenance.allowedIPs = allowedIPs;
@@ -265,7 +292,7 @@ router.post('/menu-items', protect, restrictTo('admin'), async (req, res) => {
     }
 
     let settings = await Settings.getInstance();
-    
+
     settings.navigation.menuItems.push({
       label,
       path,
@@ -296,7 +323,7 @@ router.post('/menu-items', protect, restrictTo('admin'), async (req, res) => {
 router.put('/menu-items/:id', protect, restrictTo('admin'), async (req, res) => {
   try {
     let settings = await Settings.getInstance();
-    
+
     const menuItem = settings.navigation.menuItems.id(req.params.id);
     if (!menuItem) {
       return res.status(404).json({
@@ -333,7 +360,7 @@ router.put('/menu-items/:id', protect, restrictTo('admin'), async (req, res) => 
 router.delete('/menu-items/:id', protect, restrictTo('admin'), async (req, res) => {
   try {
     let settings = await Settings.getInstance();
-    
+
     const menuItem = settings.navigation.menuItems.id(req.params.id);
     if (!menuItem) {
       return res.status(404).json({
@@ -366,7 +393,7 @@ router.post('/test-email', protect, restrictTo('admin'), async (req, res) => {
   try {
     // TODO: Implement email testing functionality
     // This would send a test email using the configured SMTP settings
-    
+
     res.json({
       success: true,
       message: 'Email test functionality not implemented yet'
@@ -397,10 +424,10 @@ router.post('/reset', protect, restrictTo('admin'), async (req, res) => {
       // Reset all settings (but keep personal info)
       const personalInfo = settings.personal;
       const siteInfo = settings.site;
-      
+
       await Settings.findByIdAndDelete(settings._id);
       settings = await Settings.getInstance();
-      
+
       settings.personal = personalInfo;
       settings.site = siteInfo;
     }
