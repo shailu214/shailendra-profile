@@ -22,23 +22,6 @@ jobs:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
-        
-    - name: 📦 Install backend dependencies
-      run: |
-        cd backend
-        npm ci
-        
-    - name: 🧪 Run backend tests
-        vercel-token: ${{ secrets.VERCEL_TOKEN }}
-        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
-        vercel-project-id: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
-        working-directory: ./backend
-        vercel-args: '--prod'
-        
-  # Frontend Build and Deployment  
-  frontend-deploy:
-    name: 🎨 Frontend Deployment
-    runs-on: ubuntu-latest
     needs: backend-deploy
     
     steps:
