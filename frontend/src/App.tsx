@@ -3,6 +3,7 @@ import { HelmetProvider } from 'react-helmet-async';
 import { Layout } from './components/Layout';
 import { ThemeProvider } from './components/ThemeProvider';
 import { ProfileProvider } from './context/ProfileContext';
+import { ProtectedRoute } from './components/ProtectedRoute';
 import { Home } from './pages/Home';
 import { About } from './pages/About';
 import { Portfolio } from './pages/Portfolio';
@@ -39,19 +40,19 @@ function AppContent() {
         <Routes>
           {/* Admin Routes - No main layout */}
           <Route path="/admin/login" element={<AdminLogin />} />
-          <Route path="/admin/dashboard" element={<AdminDashboard />} />
-          <Route path="/admin/profile" element={<AdminProfile />} />
-          <Route path="/admin/portfolio" element={<AdminPortfolio />} />
-          <Route path="/admin/blog" element={<AdminBlog />} />
-          <Route path="/admin/testimonials" element={<AdminTestimonials />} />
-          <Route path="/admin/gallery" element={<AdminGallery />} />
-          <Route path="/admin/messages" element={<AdminMessages />} />
-          <Route path="/admin/users" element={<AdminUsers />} />
-          <Route path="/admin/analytics" element={<AdminAnalytics />} />
-          <Route path="/admin/pages" element={<AdminPages />} />
-          <Route path="/admin/blog/categories" element={<AdminBlogCategories />} />
-          <Route path="/admin/settings" element={<AdminSiteSettings />} />
-          
+          <Route path="/admin/dashboard" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
+          <Route path="/admin/profile" element={<ProtectedRoute><AdminProfile /></ProtectedRoute>} />
+          <Route path="/admin/portfolio" element={<ProtectedRoute><AdminPortfolio /></ProtectedRoute>} />
+          <Route path="/admin/blog" element={<ProtectedRoute><AdminBlog /></ProtectedRoute>} />
+          <Route path="/admin/testimonials" element={<ProtectedRoute><AdminTestimonials /></ProtectedRoute>} />
+          <Route path="/admin/gallery" element={<ProtectedRoute><AdminGallery /></ProtectedRoute>} />
+          <Route path="/admin/messages" element={<ProtectedRoute><AdminMessages /></ProtectedRoute>} />
+          <Route path="/admin/users" element={<ProtectedRoute><AdminUsers /></ProtectedRoute>} />
+          <Route path="/admin/analytics" element={<ProtectedRoute><AdminAnalytics /></ProtectedRoute>} />
+          <Route path="/admin/pages" element={<ProtectedRoute><AdminPages /></ProtectedRoute>} />
+          <Route path="/admin/blog/categories" element={<ProtectedRoute><AdminBlogCategories /></ProtectedRoute>} />
+          <Route path="/admin/settings" element={<ProtectedRoute><AdminSiteSettings /></ProtectedRoute>} />
+
           {/* 404 Route for admin */}
           <Route path="/admin/*" element={<NotFound />} />
         </Routes>
@@ -67,7 +68,7 @@ function AppContent() {
             <Route path="/blog/:slug" element={<BlogPost />} />
             <Route path="/contact" element={<Contact />} />
             <Route path="/seo-test" element={<SEOTest />} />
-            
+
             {/* 404 Route for public */}
             <Route path="*" element={<NotFound />} />
           </Routes>
