@@ -22,6 +22,39 @@ jobs:
         node-version: '18'
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
+        
+    - name: 📦 Install backend dependencies
+      run: |
+        cd backend
+        npm ci
+        
+    - name: 🧪 Run backend tests
+      run: |
+        cd backend
+        npm run test
+      env:
+        NODE_ENV: test
+        
+    - name: 🔍 Backend security audit
+      continue-on-error: true
+      run: |
+        cd backend
+        npm audit --audit-level moderate
+        
+    - name: 🚀 Deploy to Vercel (Backend)
+      if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
+      uses: amondnet/vercel-action@v25
+      with:
+        vercel-token: ${{ secrets.VERCEL_TOKEN }}
+        vercel-org-id: ${{ secrets.VERCEL_ORG_ID }}
+        vercel-project-id: ${{ secrets.VERCEL_BACKEND_PROJECT_ID }}
+        working-directory: ./backend
+        vercel-args: '--prod'
+        
+  # Frontend Build and Deployment  
+  frontend-deploy:
+    name: 🎨 Frontend Deployment
+    runs-on: ubuntu-latest
     needs: backend-deploy
     
     steps:
@@ -46,6 +79,22 @@ jobs:
         npm run build
       env:
         VITE_API_URL: ${{ secrets.VITE_API_URL }}
+        
+    - name: 🧪 Run frontend tests (if available)
+      run: |
+        cd frontend
+        npm run test --passWithNoTests
+        
+    - name: 🔍 Frontend security audit
+      continue-on-error: true
+      run: |
+        cd frontend
+        npm audit --audit-level moderate
+        
+    - name: 📊 Bundle size analysis
+      run: |
+        cd frontend
+        npx vite-bundle-analyzer dist/
         
     - name: 🚀 Deploy to Vercel (Frontend)
       if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/master'
